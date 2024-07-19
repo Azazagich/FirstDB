@@ -23,7 +23,7 @@ public class App
         RoleRepository roleDao = new RoleRepository();
 //        List<Role> roles = List.of(role, role2);
 //        roleDao.delete(role2);
-        roleDao.save(role);
+      //  roleDao.save(role);
        // System.out.println(roleDao.existById(5));
         //roleDao.saveAll(roles);
         // roleDao.create(role);
