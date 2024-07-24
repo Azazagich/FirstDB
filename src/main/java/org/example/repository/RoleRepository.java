@@ -143,11 +143,9 @@ public class RoleRepository implements CrudRepository<Role, Integer> {
         Connection connection = dataSource.openConnectionDB();
 
         try (PreparedStatement prepstmt = connection.prepareStatement(sql)) {
-            boolean defaultAutoCommit = connection.getAutoCommit();
             connection.setAutoCommit(false);
             prepstmt.setInt(1, id);
             ResultSet resultSet = prepstmt.executeQuery();
-
             if (resultSet.next()){
                 isExist = true;
             }
@@ -172,6 +170,7 @@ public class RoleRepository implements CrudRepository<Role, Integer> {
     @Override
     public boolean updateId(Integer id, Role role) {
         final String sql = "UPDATE role SET name = ? WHERE id = ?";
+
         Connection connection = dataSource.openConnectionDB();
 
         try (PreparedStatement prepstmt = connection.prepareStatement(sql)) {
@@ -209,27 +208,8 @@ public class RoleRepository implements CrudRepository<Role, Integer> {
         final String roleDelete = "DELETE FROM role WHERE id = ?";
         final String cascadeDelete = "UPDATE \"user\" SET roles_id = NULL WHERE role.id = roles_id";
 
-        Connection connection = dataSource.openConnectionDB();
-
-        try {
-            PreparedStatement prepstmt = connection.prepareStatement(cascadeDelete);
-            PreparedStatement preparedStatement = connection.prepareStatement(roleDelete);
-
-            boolean defaultAutoCommit = connection.getAutoCommit();
-            connection.setAutoCommit(false);
-            prepstmt.executeUpdate();
-            preparedStatement.executeUpdate();
-            connection.commit();
-            connection.setAutoCommit(defaultAutoCommit);
-        } catch (SQLException e) {
-            try {
-                connection.rollback();
-            } catch (SQLException ex) {
-                LOGGER.error("Failed to roll back transaction.", ex);
-            }
-        } finally {
-            dataSource.closeConnectionDB();
-        }
+        statementExecute(cascadeDelete);
+        statementExecute(roleDelete, id);
     }
 
     /**
@@ -242,32 +222,8 @@ public class RoleRepository implements CrudRepository<Role, Integer> {
         final String roleDelete = "DELETE FROM role WHERE id = ? AND name = ?";
         final String cascadeDelete = "UPDATE \"user\" SET roles_id = NULL WHERE roles_id = ?";
 
-
-        Connection connection = dataSource.openConnectionDB();
-
-        try {
-            PreparedStatement prepstmt = connection.prepareStatement(cascadeDelete);
-            PreparedStatement preparedStatement = connection.prepareStatement(roleDelete);
-
-            boolean defaultAutoCommit = connection.getAutoCommit();
-            connection.setAutoCommit(false);
-            prepstmt.setInt(1, role.getId());
-            prepstmt.executeUpdate();
-            preparedStatement.setInt(1, role.getId());
-            preparedStatement.setString(2, role.getName().getUserRole());
-            preparedStatement.executeUpdate();
-            connection.commit();
-            connection.setAutoCommit(defaultAutoCommit);
-
-        } catch (SQLException e) {
-            try {
-                connection.rollback();
-            } catch (SQLException ex) {
-                LOGGER.error("Failed to roll back transaction.", ex);
-            }
-        } finally {
-            dataSource.closeConnectionDB();
-        }
+        statementExecute(cascadeDelete, role.getId());
+        statementExecute(roleDelete, role);
     }
 
     /**
@@ -278,27 +234,8 @@ public class RoleRepository implements CrudRepository<Role, Integer> {
         final String roleDelete = "DELETE FROM role";
         final String cascadeDelete = "UPDATE \"user\" SET roles_id = NULL";
 
-        Connection connection = dataSource.openConnectionDB();
-
-        try {
-            PreparedStatement prepstmt = connection.prepareStatement(cascadeDelete);
-            PreparedStatement preparedStatement = connection.prepareStatement(roleDelete);
-
-            boolean defaultAutoCommit = connection.getAutoCommit();
-            connection.setAutoCommit(false);
-            prepstmt.executeUpdate();
-            preparedStatement.executeUpdate();
-            connection.commit();
-            connection.setAutoCommit(defaultAutoCommit);
-        } catch (SQLException e) {
-            try {
-                connection.rollback();
-            } catch (SQLException ex) {
-                LOGGER.error("Failed to roll back transaction.", ex);
-            }
-        } finally {
-            dataSource.closeConnectionDB();
-        }
+        statementExecute(cascadeDelete);
+        statementExecute(roleDelete);
     }
 
     /**
@@ -311,6 +248,8 @@ public class RoleRepository implements CrudRepository<Role, Integer> {
         roles.forEach(this::delete);
     }
 
+
+//////////////////////////////////////////////////////////////////////////////////////////////
     private void statementExecute(String sql){
         Connection connection = dataSource.openConnectionDB();
 
@@ -337,6 +276,7 @@ public class RoleRepository implements CrudRepository<Role, Integer> {
         try (PreparedStatement preparedStatement = connection.prepareStatement(sql)) {
             boolean defaultAutoCommit = connection.getAutoCommit();
             connection.setAutoCommit(false);
+            preparedStatement.setInt(1, id);
             preparedStatement.executeUpdate();
             connection.commit();
             connection.setAutoCommit(defaultAutoCommit);
@@ -361,7 +301,6 @@ public class RoleRepository implements CrudRepository<Role, Integer> {
             preparedStatement.setInt(1, role.getId());
             preparedStatement.setString(2, role.getName().getUserRole());
             preparedStatement.executeUpdate();
-
             connection.commit();
             connection.setAutoCommit(defaultAutoCommit);
         } catch (SQLException e) {
