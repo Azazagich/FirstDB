@@ -16,13 +16,13 @@ import java.util.Optional;
 /**
  * RoleRepository provides CRUD operations for Role entities using a DataSource for database connections.
  */
-public class RoleRepository implements CrudRepository<Role, Integer> {
+public class RoleCrudRepository implements CrudRepository<Role, Integer> {
 
     private final DataSource dataSource;
 
-    private static final Logger LOGGER = LogManager.getLogger(RoleRepository.class);
+    private static final Logger LOGGER = LogManager.getLogger(RoleCrudRepository.class);
 
-    public RoleRepository() {
+    public RoleCrudRepository() {
         dataSource = new DataSource();
     }
 
