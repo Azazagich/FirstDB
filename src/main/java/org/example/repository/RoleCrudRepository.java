@@ -26,6 +26,28 @@ public class RoleCrudRepository implements CrudRepository<Role, Integer> {
         dataSource = new DataSource();
     }
 
+    private static final String SQL_INSERT_ROLE = "INSERT INTO role(id, name) VALUES(?, ?)";
+
+    private static final String SQL_SELECT_ROLE_BY_ID = "SELECT * FROM role WHERE id = ?";
+
+    private static final String SQL_SELECT_ALL_ROLES = "SELECT * FROM role";
+
+    private static final String SQL_SELECT_ID_IN_ROLE_BY_ID = "SELECT id FROM role WHERE id = ?";
+
+    private static final String SQL_UPDATE_ROLE_BY_ID = "UPDATE role SET name = ? WHERE id = ?";
+
+    private static final String SQL_DELETE_ROLE_BY_ID = "DELETE FROM role WHERE id = ?";
+
+    private static final String SQL_UPDATE_USER_BY_ROLE_ID = "UPDATE \"user\" SET roles_id = NULL WHERE role.id = roles_id";
+
+    private static final String SQL_DELETE_ROLE_BY_ROLE = "DELETE FROM role WHERE id = ? AND name = ?";
+
+    private static final String SQL_UPDATE_USER_BY_ROLES_ID = "UPDATE \"user\" SET roles_id = NULL WHERE roles_id = ?";
+
+    private static final String SQL_DELETE_ALL_ROLES = "DELETE FROM role";
+
+    private static final String SQL_UPDATE_USER_ROLES_ID = "UPDATE \"user\" SET roles_id = NULL";
+
     /**
      * Saves a given Role to the database.
      *
@@ -35,8 +57,7 @@ public class RoleCrudRepository implements CrudRepository<Role, Integer> {
     @Override
     public Role save(Role role) {
         if (role != null) {
-            final String sql = "INSERT INTO role(id, name) VALUES(?, ?)";
-            statementExecute(sql, role);
+            statementExecute(SQL_INSERT_ROLE, role);
         }
         return role;
     }
@@ -60,11 +81,10 @@ public class RoleCrudRepository implements CrudRepository<Role, Integer> {
      */
     @Override
     public Optional<Role> findById(Integer id) {
-        final String sql = "SELECT * FROM role WHERE id = ?";
         Role role = new Role();
 
         Connection connection = dataSource.openConnectionDB();
-        try (PreparedStatement prepstmt = connection.prepareStatement(sql)) {
+        try (PreparedStatement prepstmt = connection.prepareStatement(SQL_SELECT_ROLE_BY_ID)) {
             boolean defaultAutoCommit = connection.getAutoCommit();
             connection.setAutoCommit(false);
 
@@ -100,20 +120,19 @@ public class RoleCrudRepository implements CrudRepository<Role, Integer> {
      */
     @Override
     public List<Role> findAll() {
-        final String sql = "SELECT * FROM role";
         List<Role> roles = new ArrayList<>();
 
         Connection connection = dataSource.openConnectionDB();
 
-        try (Statement statement = connection.createStatement()) {
+        try (Statement statement = connection.createStatement(ResultSet.TYPE_FORWARD_ONLY, ResultSet.CONCUR_READ_ONLY)) {
             boolean defaultAutoCommit = connection.getAutoCommit();
             connection.setAutoCommit(false);
-            ResultSet resultSet = statement.executeQuery(sql);
+            ResultSet resultSet = statement.executeQuery(SQL_SELECT_ALL_ROLES);
             connection.commit();
 
             while (resultSet.next()) {
                 roles.add(new Role().id(resultSet.getInt("id"))
-                        .name(RoleName.valueOf(resultSet.getString("name"))));
+                                    .name(RoleName.valueOf(resultSet.getString("name"))));
             }
             connection.setAutoCommit(defaultAutoCommit);
         } catch (SQLException e) {
@@ -137,25 +156,22 @@ public class RoleCrudRepository implements CrudRepository<Role, Integer> {
      */
     @Override
     public boolean existById(Integer id) {
-        final String sql = "SELECT id FROM role WHERE id = ?";
         boolean isExist = false;
 
         Connection connection = dataSource.openConnectionDB();
 
-        try (PreparedStatement prepstmt = connection.prepareStatement(sql)) {
+        try (PreparedStatement prepstmt = connection.prepareStatement(SQL_SELECT_ID_IN_ROLE_BY_ID)) {
             connection.setAutoCommit(false);
             prepstmt.setInt(1, id);
             ResultSet resultSet = prepstmt.executeQuery();
             if (resultSet.next()){
                 isExist = true;
             }
-
         } catch (SQLException e) {
             LOGGER.error(e);
         } finally {
             dataSource.closeConnectionDB();
         }
-
         return isExist;
     }
 
@@ -169,11 +185,9 @@ public class RoleCrudRepository implements CrudRepository<Role, Integer> {
      */
     @Override
     public boolean updateId(Integer id, Role role) {
-        final String sql = "UPDATE role SET name = ? WHERE id = ?";
-
         Connection connection = dataSource.openConnectionDB();
 
-        try (PreparedStatement prepstmt = connection.prepareStatement(sql)) {
+        try (PreparedStatement prepstmt = connection.prepareStatement(SQL_UPDATE_ROLE_BY_ID)) {
             boolean defaultAutoCommit = connection.getAutoCommit();
 
             connection.setAutoCommit(false);
@@ -205,11 +219,8 @@ public class RoleCrudRepository implements CrudRepository<Role, Integer> {
      */
     @Override
     public void deleteById(Integer id) {
-        final String roleDelete = "DELETE FROM role WHERE id = ?";
-        final String cascadeDelete = "UPDATE \"user\" SET roles_id = NULL WHERE role.id = roles_id";
-
-        statementExecute(cascadeDelete);
-        statementExecute(roleDelete, id);
+        statementExecute(SQL_UPDATE_USER_BY_ROLE_ID);
+        statementExecute(SQL_DELETE_ROLE_BY_ID, id);
     }
 
     /**
@@ -219,11 +230,8 @@ public class RoleCrudRepository implements CrudRepository<Role, Integer> {
      */
     @Override
     public void delete(Role role) {
-        final String roleDelete = "DELETE FROM role WHERE id = ? AND name = ?";
-        final String cascadeDelete = "UPDATE \"user\" SET roles_id = NULL WHERE roles_id = ?";
-
-        statementExecute(cascadeDelete, role.getId());
-        statementExecute(roleDelete, role);
+        statementExecute(SQL_UPDATE_USER_BY_ROLES_ID, role.getId());
+        statementExecute(SQL_DELETE_ROLE_BY_ROLE, role);
     }
 
     /**
@@ -231,11 +239,8 @@ public class RoleCrudRepository implements CrudRepository<Role, Integer> {
      */
     @Override
     public void deleteAll() {
-        final String roleDelete = "DELETE FROM role";
-        final String cascadeDelete = "UPDATE \"user\" SET roles_id = NULL";
-
-        statementExecute(cascadeDelete);
-        statementExecute(roleDelete);
+        statementExecute(SQL_UPDATE_USER_ROLES_ID);
+        statementExecute(SQL_DELETE_ALL_ROLES);
     }
 
     /**
