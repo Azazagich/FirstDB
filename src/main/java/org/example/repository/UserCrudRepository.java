@@ -21,15 +21,29 @@ public class UserCrudRepository implements CrudRepository<User, Integer> {
         dataSource = new DataSource();
     }
 
+    private static final String SQL_INSERT_USER = "INSERT INTO \"user\" (id, firstname, email, password, roles_id) VALUES(?, ?, ?, ?, ?)";
+
+    private static final String SQL_SELECT_USER_BY_ID = "SELECT * FROM \"user\" WHERE id = ?";
+
+    private static final String SQL_SELECT_ALL_USERS = "SELECT * FROM \"user\"";
+
+    private static final String SQL_SELECT_ID_IN_USER_BY_ID = "SELECT id FROM \"user\" WHERE id = ?";
+
+    private static final String SQL_UPDATE_USER_BY_ID = "UPDATE \"user\" SET firstname = ?,  email = ?, password = ?, roles_id = ? WHERE id = ?";
+
+    private static final String SQL_DELETE_USER_BY_ID = "DELETE FROM \"user\" WHERE id = ?";
+
+    private static final String SQL_DELETE_USER_BY_USER = "DELETE FROM \"user\" WHERE id = ? AND firstname = ? AND email = ? AND password = ? AND roles_id = ?";
+
+    private static final String SQL_DELETE_ALL_ROLES = "DELETE FROM \"user\"";
 
     @Override
     public User save(User user) {
-        final String sql = "INSERT INTO \"user\" (id, firstname, email, password, roles_id) VALUES(?, ?, ?, ?, ?)";
-
         Connection connection = dataSource.openConnectionDB();
-        try (PreparedStatement prepstmt = connection.prepareStatement(sql)) {
+        try (PreparedStatement prepstmt = connection.prepareStatement(SQL_INSERT_USER)) {
             boolean defaultAutoCommit = connection.getAutoCommit();
             connection.setAutoCommit(false);
+
             prepstmt.setInt(1, user.getId());
             prepstmt.setString(2, user.getFirstName());
             prepstmt.setString(3, user.getEmail());
@@ -58,11 +72,9 @@ public class UserCrudRepository implements CrudRepository<User, Integer> {
 
     @Override
     public Optional<User> findById(Integer id) {
-        final String sql = "SELECT * FROM \"user\" WHERE id = ?";
-
         Connection connection = dataSource.openConnectionDB();
         User user = new User();
-        try(PreparedStatement prepstmt = connection.prepareStatement(sql)){
+        try(PreparedStatement prepstmt = connection.prepareStatement(SQL_SELECT_USER_BY_ID)){
             boolean defaultAutoCommit = connection.getAutoCommit();
             connection.setAutoCommit(false);
             prepstmt.setInt(1, id);
@@ -92,15 +104,13 @@ public class UserCrudRepository implements CrudRepository<User, Integer> {
 
     @Override
     public List<User> findAll(){
-        final String sql = "SELECT * FROM \"user\"";
-
         Connection connection = dataSource.openConnectionDB();
         List<User> users = new ArrayList<>();
 
-        try (Statement statement = connection.createStatement()){
+        try (Statement statement = connection.createStatement(ResultSet.TYPE_FORWARD_ONLY, ResultSet.CONCUR_READ_ONLY)){
             boolean defaultAutoCommit = connection.getAutoCommit();
             connection.setAutoCommit(false);
-            ResultSet userResult = statement.executeQuery(sql);
+            ResultSet userResult = statement.executeQuery(SQL_SELECT_ALL_USERS);
             connection.commit();
 
             while(userResult.next()) {
@@ -126,12 +136,10 @@ public class UserCrudRepository implements CrudRepository<User, Integer> {
 
     @Override
     public boolean existById(Integer id) {
-        final String sql = "SELECT id FROM \"user\" WHERE id = ?";
         boolean isExist = false;
-
         Connection connection = dataSource.openConnectionDB();
 
-        try (PreparedStatement prepstmt = connection.prepareStatement(sql)) {
+        try (PreparedStatement prepstmt = connection.prepareStatement(SQL_SELECT_ID_IN_USER_BY_ID)) {
             connection.setAutoCommit(false);
             prepstmt.setInt(1, id);
             ResultSet resultSet = prepstmt.executeQuery();
@@ -150,10 +158,9 @@ public class UserCrudRepository implements CrudRepository<User, Integer> {
 
     @Override
     public boolean updateId(Integer id, User user) {
-        final String sql = "UPDATE \"user\" SET firstname = ?,  email = ?, password = ?, roles_id = ? WHERE id = ?";
         Connection connection = dataSource.openConnectionDB();
 
-        try(PreparedStatement prepstmt = connection.prepareStatement(sql)){
+        try(PreparedStatement prepstmt = connection.prepareStatement(SQL_UPDATE_USER_BY_ID)){
             boolean defaultAutoCommit = connection.getAutoCommit();
 
             connection.setAutoCommit(false);
@@ -182,11 +189,9 @@ public class UserCrudRepository implements CrudRepository<User, Integer> {
 
     @Override
     public void deleteById(Integer id) {
-        final String sql = "DELETE FROM \"user\" WHERE id = ?";
-
         Connection connection = dataSource.openConnectionDB();
 
-        try(PreparedStatement prepstmt = connection.prepareStatement(sql)){
+        try(PreparedStatement prepstmt = connection.prepareStatement(SQL_DELETE_USER_BY_ID)){
             boolean defaultAutoCommit = connection.getAutoCommit();
             connection.setAutoCommit(false);
             prepstmt.setInt(1, id);
@@ -207,19 +212,19 @@ public class UserCrudRepository implements CrudRepository<User, Integer> {
 
     @Override
     public void delete(User user) {
-        final String sql = "DELETE FROM \"user\" WHERE id = ? AND firstname = ? AND email = ? AND password = ? AND roles_id = ?";
-
         Connection connection = dataSource.openConnectionDB();
 
-        try(PreparedStatement prepstmt = connection.prepareStatement(sql)){
+        try(PreparedStatement prepstmt = connection.prepareStatement(SQL_DELETE_USER_BY_USER)){
             boolean defaultAutoCommit = connection.getAutoCommit();
             connection.setAutoCommit(false);
+
             prepstmt.setInt(1, user.getId());
             prepstmt.setString(2, user.getFirstName());
             prepstmt.setString(3, user.getEmail());
             prepstmt.setString(4, user.getPassword());
             prepstmt.setInt(5, user.getRole().getId());
             prepstmt.executeUpdate();
+
             connection.commit();
             connection.setAutoCommit(defaultAutoCommit);
 
@@ -236,11 +241,9 @@ public class UserCrudRepository implements CrudRepository<User, Integer> {
 
     @Override
     public void deleteAll() {
-        final String sql = "DELETE FROM role";
-
         Connection connection = dataSource.openConnectionDB();
 
-        try(PreparedStatement prepstmt = connection.prepareStatement(sql)){
+        try(PreparedStatement prepstmt = connection.prepareStatement(SQL_DELETE_ALL_ROLES)){
             boolean defaultAutoCommit = connection.getAutoCommit();
             connection.setAutoCommit(false);
             prepstmt.executeUpdate();
