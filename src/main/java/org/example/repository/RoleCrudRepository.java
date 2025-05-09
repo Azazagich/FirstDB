@@ -255,6 +255,27 @@ public class RoleCrudRepository implements CrudRepository<Role, Integer> {
 
 
 //////////////////////////////////////////////////////////////////////////////////////////////
+    
+    private void statementExecute_(String sql, String... value){
+        Connection connection = dataSource.openConnectionDB();
+
+        try (PreparedStatement preparedStatement = connection.prepareStatement(sql)) {
+            boolean defaultAutoCommit = connection.getAutoCommit();
+            connection.setAutoCommit(false);
+            preparedStatement.executeUpdate();
+            connection.commit();
+            connection.setAutoCommit(defaultAutoCommit);
+        } catch (SQLException e) {
+            try {
+                connection.rollback();
+            } catch (SQLException ex) {
+                LOGGER.error("Failed to roll back transaction.", ex);
+            }
+        } finally {
+            dataSource.closeConnectionDB();
+        }
+    }
+    
     private void statementExecute(String sql){
         Connection connection = dataSource.openConnectionDB();
 
